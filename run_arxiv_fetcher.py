@@ -1,6 +1,6 @@
 import os
 import datetime
-import arxiv # 导入arxiv库
+import arxiv  # 导入arxiv库
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
@@ -8,8 +8,7 @@ from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentClo
 from tencentcloud.tmt.v20180321 import tmt_client, models
 
 # --- 1. 配置区域 ---
-YOUR_SECRET_ID = 1335386935
-YOUR_SECRET_KEY = "AKIDb9TaWFl6GI9nDQQFsIWWItQkxAIE1snc"
+
 # 腾讯云API密钥 (从您的腾讯云控制台获取)
 # 强烈建议使用环境变量来存储，而不是硬编码在代码中
 SECRET_ID = os.environ.get("TENCENT_SECRET_ID", "YOUR_SECRET_ID")
@@ -111,7 +110,7 @@ def main():
         return
 
     # 为了报告的可读性，我们将新论文按从旧到新的顺序排列
-    papers_to_process.reverse() 
+    papers_to_process.reverse()
     print(f"发现了 {len(papers_to_process)} 篇新论文。开始处理...")
 
     # 3. 准备 Markdown 内容
@@ -159,6 +158,7 @@ def main():
         f.write("\n\n".join(md_content))
 
     print(f"报告已生成: {filename}")
+
 
 if __name__ == "__main__":
     main()
