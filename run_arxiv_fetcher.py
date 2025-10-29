@@ -1,6 +1,7 @@
 import os
 import datetime
 import arxiv  # 导入arxiv库
+import requests  # 确保导入 requests
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
@@ -9,31 +10,31 @@ from tencentcloud.tmt.v20180321 import tmt_client, models
 
 # --- 1. 配置区域 ---
 
-# 腾讯云API密钥 (从您的腾讯云控制台获取)
-# 强烈建议使用环境变量来存储，而不是硬编码在代码中
-SECRET_ID = os.environ.get("TENCENT_SECRET_ID", "YOUR_SECRET_ID")
-SECRET_KEY = os.environ.get("TENCENT_SECRET_KEY", "YOUR_SECRET_KEY")
+# 腾讯云API密钥 (将从 GitHub Secrets 中读取)
+SECRET_ID = os.environ.get("TENCENT_SECRET_ID")
+SECRET_KEY = os.environ.get("TENCENT_SECRET_KEY")
 
 # 翻译配置
-TRANSLATE_REGION = "ap-guangzhou"  # 使用您开通服务的地域，例如 "ap-guangzhou"
+TRANSLATE_REGION = "ap-guangzhou"
 TRANSLATE_ENDPOINT = "tmt.tencentcloudapi.com"
 
 # arXiv 查询配置
-ARXIV_QUERY = "cat:quant-ph"  # 分类：量子物理
-ARXIV_MAX_RESULTS = 50       # 每次最多拉取最近50篇
+ARXIV_QUERY = "cat:quant-ph"
+ARXIV_MAX_RESULTS = 50       # 每次拉取最新的 50 篇
 
 # 输出配置
-OUTPUT_DIR = "reports"  # 报告存放的文件夹
-PROCESSED_IDS_FILE = "processed_ids.txt"  # 存放已处理论文ID的文件
+OUTPUT_DIR = "reports"
+PROCESSED_IDS_FILE = "processed_ids.txt"
 
 # --- 2. 腾讯翻译函数 ---
 
 
 def translate_text(text, source='en', target='zh'):
     """调用腾讯API翻译文本"""
-    if not SECRET_ID or SECRET_ID == "YOUR_SECRET_ID":
-        print("错误：未配置腾讯云 SECRET_ID。跳过翻译。")
-        return f"[Translation Skipped] {text}"
+    if not SECRET_ID or not SECRET_KEY:
+        print("错误：未在 GitHub Secrets 中配置 TENCENT_SECRET_ID 或 TENCENT_SECRET_KEY。")
+        print("将跳过翻译。")
+        return f"[Translation Skipped - Check GitHub Secrets] {text}"
 
     try:
         cred = credential.Credential(SECRET_ID, SECRET_KEY)
@@ -87,51 +88,49 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     processed_ids = load_processed_ids()
 
-    # 1. 搜索 arXiv
-    # 按提交日期降序排序，获取最新的论文
+    # --- 这是修复了 'DeprecationWarning' 的正确代码 ---
+
+    # 1. 实例化一个 Client (不需要任何代理参数)
+    client = arxiv.Client()
     search = arxiv.Search(
         query=ARXIV_QUERY,
         max_results=ARXIV_MAX_RESULTS,
         sort_by=arxiv.SortCriterion.SubmittedDate,
         sort_order=arxiv.SortOrder.Descending
     )
-
     # 2. 筛选新论文
     papers_to_process = []
-    for result in search.results():
-        # result.entry_id 的格式是 'http://arxiv.org/abs/2410.12345v1'
-        # 我们可以只取ID部分
-        paper_id = result.get_short_id()
-        if paper_id not in processed_ids:
-            papers_to_process.append(result)
-
+    print("正在连接到 arXiv API 获取结果...")
+    try:
+        # 使用 client.results() (这在 GitHub 上会正常工作)
+        results_generator = client.results(search)
+        for result in results_generator:
+            paper_id = result.get_short_id()
+            if paper_id not in processed_ids:
+                papers_to_process.append(result)
+    except Exception as e:
+        print(f"!!! 访问 arXiv API 失败 (GitHub Runner)。错误详情: {e}")
+        return  # 失败则退出
     if not papers_to_process:
         print("没有发现新论文。")
         return
-
     # 为了报告的可读性，我们将新论文按从旧到新的顺序排列
     papers_to_process.reverse()
     print(f"发现了 {len(papers_to_process)} 篇新论文。开始处理...")
-
     # 3. 准备 Markdown 内容
     today_str = datetime.date.today().isoformat()
     md_content = [f"# {today_str} · quant-ph 论文速递\n"]
-
     # 4. 循环处理每篇论文
     for paper in papers_to_process:
         paper_id = paper.get_short_id()
         try:
             print(f"正在处理: {paper.title}")
-
             # 翻译
             title_zh = translate_text(paper.title)
-            # 摘要中的换行符可能导致API出错，先替换掉
             clean_summary = paper.summary.replace('\n', ' ')
             abstract_zh = translate_text(clean_summary)
-
             # 作者
             authors = ", ".join([author.name for author in paper.authors])
-
             # 拼接MD
             md_content.append(f"## {title_zh}")
             md_content.append(f"**Original Title:** {paper.title}")
@@ -144,19 +143,14 @@ def main():
             md_content.append("\n### Abstract")
             md_content.append(paper.summary)
             md_content.append("\n---\n")  # 分隔符
-
             # 标记为已处理
             save_processed_id(paper_id)
-
         except Exception as e:
             print(f"处理论文 {paper_id} 时发生错误: {e}")
-            # 如果处理失败，我们不保存ID，以便下次重试
-
     # 5. 保存 .md 文件
     filename = os.path.join(OUTPUT_DIR, f"quant-ph_{today_str}.md")
     with open(filename, 'w', encoding='utf-8') as f:
         f.write("\n\n".join(md_content))
-
     print(f"报告已生成: {filename}")
 
 
