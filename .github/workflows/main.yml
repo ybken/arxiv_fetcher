@@ -44,8 +44,10 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 检查是否有文件变动（新报告或更新的id列表）
-          git add reports/*.md processed_ids.txt
+          # 尝试添加 reports/ 目录下的所有文件
+          git add reports/
+          # 尝试添加 processed_ids.txt，如果不存在 (|| true) 也不要报错
+          git add processed_ids.txt || true
           
           # 如果有变动才提交
           if ! git diff --cached --quiet; then
