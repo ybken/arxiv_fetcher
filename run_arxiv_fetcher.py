@@ -2,6 +2,7 @@ import os
 import datetime
 import arxiv  # 导入arxiv库
 import requests  # 确保导入 requests
+import json
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
@@ -52,7 +53,7 @@ def translate_text(text, source='en', target='zh'):
             "Target": target,
             "ProjectId": 0
         }
-        req.from_json_string(str(params))
+        req.from_json_string(json.dumps(params))
 
         resp = client.TextTranslate(req)
         return resp.TargetText
