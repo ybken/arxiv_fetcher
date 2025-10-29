@@ -12,6 +12,8 @@ on:
 jobs:
   build-and-commit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       # 1. 检出 (Checkout) 您的代码
       - name: Checkout code
@@ -44,9 +46,8 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 尝试添加 reports/ 目录下的所有文件
-          git add reports/
-          # 尝试添加 processed_ids.txt，如果不存在 (|| true) 也不要报错
+          # 尝试添加文件，如果文件不存在 (|| true) 也不要报错
+          git add reports/*.md || true
           git add processed_ids.txt || true
           
           # 如果有变动才提交
