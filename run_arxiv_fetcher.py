@@ -128,7 +128,11 @@ def main():
             print(f"正在处理: {paper.title}")
             # 翻译
             title_zh = translate_text(paper.title)
+            time.sleep(0.5)
             clean_summary = paper.summary.replace('\n', ' ')
+            if len(clean_summary) > 2000:
+                print(f"  [警告] 摘要过长 ({len(clean_summary)} 字符)，将进行截断...")
+                clean_summary = clean_summary[:2000]  # 截断为前2000个字符
             abstract_zh = translate_text(clean_summary)
             # 作者
             authors = ", ".join([author.name for author in paper.authors])
@@ -138,7 +142,7 @@ def main():
             md_content.append(f"**Authors:** {authors}")
             md_content.append(f"**Link:** {paper.entry_id}")
             md_content.append(f"**PDF:** {paper.pdf_url}")
-            md_content.append(f"**Submitted:** {paper.submitted.date()}")
+            md_content.append(f"**Submitted:** {paper.published.date()}")
             md_content.append("\n### 摘要")
             md_content.append(abstract_zh)
             md_content.append("\n### Abstract")
