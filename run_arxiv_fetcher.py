@@ -22,7 +22,7 @@ TRANSLATE_ENDPOINT = "tmt.tencentcloudapi.com"
 
 # arXiv 查询配置
 ARXIV_QUERY = "cat:quant-ph"
-ARXIV_MAX_RESULTS = 50       # 每次拉取最新的 50 篇
+ARXIV_MAX_RESULTS = 100       # 每次拉取最新的 100 篇
 
 # 输出配置
 OUTPUT_DIR = "reports"
