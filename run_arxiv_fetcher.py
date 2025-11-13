@@ -1,6 +1,7 @@
 import os
 import time
 import datetime
+from datetime import timedelta, timezone
 import arxiv  # 导入arxiv库
 import requests  # 确保导入 requests
 import json
@@ -122,9 +123,15 @@ def main():
     # 3. 准备 Markdown 内容
     today_str = datetime.date.today().isoformat()
     md_content = [f"# {today_str} · quant-ph 论文速递\n"]
+    # 设定时间窗口，获取当前的UTC时间
+    now_utc = datatime.datatime.now(timezone.utc)
+    # 设定过去96小时时间点
+    time_threshold = now_utc - timedelta(days=4)
     # 4. 循环处理每篇论文
     for paper in papers_to_process:
         paper_id = paper.get_short_id()
+        if paper.updated<time_threshold:
+            continue
         try:
             print(f"正在处理: {paper.title}")
             # 翻译
