@@ -124,7 +124,7 @@ def main():
     today_str = datetime.date.today().isoformat()
     md_content = [f"# {today_str} · quant-ph 论文速递\n"]
     # 设定时间窗口，获取当前的UTC时间
-    now_utc = datatime.datatime.now(timezone.utc)
+    now_utc = datetime.datetime.now(timezone.utc)
     # 设定过去96小时时间点
     time_threshold = now_utc - timedelta(days=4)
     # 4. 循环处理每篇论文
